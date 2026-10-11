@@ -1,6 +1,93 @@
+trigger:
+  branches:
+    include:
+      - main
+
+pool:
+  name: 'Default'
+
 variables:
+  # Replace with the storage account name created in Step 1
   backendStorageAccount: 'tfstatepz5655'
   backendResourceGroup: 'rg-terraform-state'
   backendContainer: 'tfstate'
   backendKey: 'dev.terraform.tfstate'
   serviceConnection: 'azure-connection'
+
+stages:
+# ------------------------------------------------------------------
+# STAGE 1: TERRAFORM VALIDATE & PLAN
+# ------------------------------------------------------------------
+- stage: TerraformPlan
+  displayName: 'Terraform Plan & Validation'
+  jobs:
+  - job: Plan
+    displayName: 'Validate and Generate Plan'
+    steps:
+    - checkout: self
+
+    - task: AzureCLI@2
+      displayName: 'Terraform Init and Plan'
+      inputs:
+        azureSubscription: '$(serviceConnection)'
+        scriptType: 'ps'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          $ErrorActionPreference = 'Stop'
+          Write-Host "===> Initializing Terraform with remote Azure backend..."
+          terraform init `
+            -backend-config="resource_group_name=$(backendResourceGroup)" `
+            -backend-config="storage_account_name=$(backendStorageAccount)" `
+            -backend-config="container_name=$(backendContainer)" `
+            -backend-config="key=$(backendKey)"
+
+          Write-Host "===> Validating syntax..."
+          terraform validate
+
+          Write-Host "===> Generating execution plan..."
+          terraform plan -out=tfplan
+
+    # Publish the binary plan so Stage 2 applies the exact calculated delta
+    - task: PublishPipelineArtifact@1
+      displayName: 'Publish Execution Plan Artifact'
+      inputs:
+        targetPath: '$(Build.SourcesDirectory)/tfplan'
+        artifact: 'tfplan-drop'
+
+# ------------------------------------------------------------------
+# STAGE 2: TERRAFORM APPLY
+# ------------------------------------------------------------------
+- stage: TerraformApply
+  displayName: 'Terraform Apply'
+  dependsOn: TerraformPlan
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  jobs:
+  - job: Apply
+    displayName: 'Execute Plan to Azure'
+    steps:
+    - checkout: self
+
+    - task: DownloadPipelineArtifact@2
+      displayName: 'Download Plan Artifact'
+      inputs:
+        buildType: 'current'
+        artifactName: 'tfplan-drop'
+        targetPath: '$(Build.SourcesDirectory)'
+
+    - task: AzureCLI@2
+      displayName: 'Apply Approved Infrastructure'
+      inputs:
+        azureSubscription: '$(serviceConnection)'
+        scriptType: 'ps'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          $ErrorActionPreference = 'Stop'
+          Write-Host "===> Re-initializing backend..."
+          terraform init `
+            -backend-config="resource_group_name=$(backendResourceGroup)" `
+            -backend-config="storage_account_name=$(backendStorageAccount)" `
+            -backend-config="container_name=$(backendContainer)" `
+            -backend-config="key=$(backendKey)"
+
+          Write-Host "===> Executing terraform apply against tfplan..."
+          terraform apply -input=false -auto-approve tfplan
