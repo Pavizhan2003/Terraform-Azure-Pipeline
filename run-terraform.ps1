@@ -11,16 +11,16 @@ param (
 
 $ErrorActionPreference = 'Stop';$tf = "C:\Tools\Terraform\terraform.exe";
 
-# 1. Force Terraform to use Service Principal and ignore Azure CLI User auth
+# 1. Force Terraform to use Service Principal and bypass Azure CLI User auth check
 $env:ARM_USE_CLI         = "false";
 $env:ARM_CLIENT_ID       =$env:servicePrincipalId;
 $env:ARM_CLIENT_SECRET   =$env:servicePrincipalKey;
 $env:ARM_TENANT_ID       =$env:tenantId;
 $env:ARM_SUBSCRIPTION_ID = (az account show --query id -o tsv);
 
-Write-Host "===> Terraform Environment Authenticated as Service Principal: $env:ARM_CLIENT_ID";
+Write-Host "===> Authenticated as Service Principal: $env:ARM_CLIENT_ID";
 
-# 2. Initialize Terraform Backend
+# 2. Initialize Terraform Remote Backend
 Write-Host "===> Initializing Terraform with remote Azure backend...";
 & $tf init `
   -backend-config="resource_group_name=$BackendResourceGroup" `
