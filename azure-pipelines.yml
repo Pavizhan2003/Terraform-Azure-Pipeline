@@ -32,7 +32,7 @@ stages:
         scriptType: 'ps'
         scriptLocation: 'inlineScript'
         inlineScript: |
-          $ErrorActionPreference = 'Stop'$tf = "C:\Tools\Terraform\terraform.exe"
+          $ErrorActionPreference = 'Stop';$tf = "C:\Tools\Terraform\terraform.exe";
 
           Write-Host "===> Initializing Terraform with remote Azure backend..."
           & $tf init `
@@ -80,7 +80,7 @@ stages:
         scriptType: 'ps'
         scriptLocation: 'inlineScript'
         inlineScript: |
-          $ErrorActionPreference = 'Stop'$tf = "C:\Tools\Terraform\terraform.exe"
+          $ErrorActionPreference = 'Stop';$tf = "C:\Tools\Terraform\terraform.exe";
 
           Write-Host "===> Re-initializing backend..."
           & $tf init `
