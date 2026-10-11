@@ -30,26 +30,10 @@ stages:
       inputs:
         azureSubscription: '$(serviceConnection)'
         scriptType: 'ps'
-        scriptLocation: 'inlineScript'
+        scriptLocation: 'scriptPath'
+        scriptPath: '$(Build.SourcesDirectory)/run-terraform.ps1'
+        arguments: '-Action plan -BackendResourceGroup $(backendResourceGroup) -BackendStorageAccount $(backendStorageAccount) -BackendContainer $(backendContainer) -BackendKey $(backendKey)'
         addSpnToEnvironment: true
-        inlineScript: |
-          $ErrorActionPreference = 'Stop'$tf = "C:\Tools\Terraform\terraform.exe"
-
-          # Map Azure DevOps Service Principal variables to Terraform ARM environment variables
-          $env:ARM_CLIENT_ID       = $env:servicePrincipalId$env:ARM_CLIENT_SECRET   = $env:servicePrincipalKey$env:ARM_TENANT_ID       = $env:tenantId$env:ARM_SUBSCRIPTION_ID = (az account show --query id -o tsv)
-
-          Write-Host "===> Initializing Terraform with remote Azure backend..."
-          & $tf init `
-            -backend-config="resource_group_name=$(backendResourceGroup)" `
-            -backend-config="storage_account_name=$(backendStorageAccount)" `
-            -backend-config="container_name=$(backendContainer)" `
-            -backend-config="key=$(backendKey)"
-
-          Write-Host "===> Validating syntax..."
-          & $tf validate
-
-          Write-Host "===> Generating execution plan..."
-          & $tf plan -out=tfplan
 
     - task: PublishPipelineArtifact@1
       displayName: 'Publish Execution Plan Artifact'
@@ -82,20 +66,7 @@ stages:
       inputs:
         azureSubscription: '$(serviceConnection)'
         scriptType: 'ps'
-        scriptLocation: 'inlineScript'
+        scriptLocation: 'scriptPath'
+        scriptPath: '$(Build.SourcesDirectory)/run-terraform.ps1'
+        arguments: '-Action apply -BackendResourceGroup $(backendResourceGroup) -BackendStorageAccount $(backendStorageAccount) -BackendContainer $(backendContainer) -BackendKey $(backendKey)'
         addSpnToEnvironment: true
-        inlineScript: |
-          $ErrorActionPreference = 'Stop'$tf = "C:\Tools\Terraform\terraform.exe"
-
-          # Map Azure DevOps Service Principal variables to Terraform ARM environment variables
-          $env:ARM_CLIENT_ID       = $env:servicePrincipalId$env:ARM_CLIENT_SECRET   = $env:servicePrincipalKey$env:ARM_TENANT_ID       = $env:tenantId$env:ARM_SUBSCRIPTION_ID = (az account show --query id -o tsv)
-
-          Write-Host "===> Re-initializing backend..."
-          & $tf init `
-            -backend-config="resource_group_name=$(backendResourceGroup)" `
-            -backend-config="storage_account_name=$(backendStorageAccount)" `
-            -backend-config="container_name=$(backendContainer)" `
-            -backend-config="key=$(backendKey)"
-
-          Write-Host "===> Executing terraform apply against tfplan..."
-          & $tf apply -input=false -auto-approve tfplan
