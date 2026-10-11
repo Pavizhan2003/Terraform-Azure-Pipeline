@@ -7,7 +7,6 @@ pool:
   name: 'Default'
 
 variables:
-  # Replace with the storage account name created in Step 1
   backendStorageAccount: 'tfstatepz5655'
   backendResourceGroup: 'rg-terraform-state'
   backendContainer: 'tfstate'
@@ -33,21 +32,21 @@ stages:
         scriptType: 'ps'
         scriptLocation: 'inlineScript'
         inlineScript: |
-          $ErrorActionPreference = 'Stop'
+          $ErrorActionPreference = 'Stop'$tf = "C:\Tools\Terraform\terraform.exe"
+
           Write-Host "===> Initializing Terraform with remote Azure backend..."
-          terraform init `
+          & $tf init `
             -backend-config="resource_group_name=$(backendResourceGroup)" `
             -backend-config="storage_account_name=$(backendStorageAccount)" `
             -backend-config="container_name=$(backendContainer)" `
             -backend-config="key=$(backendKey)"
 
           Write-Host "===> Validating syntax..."
-          terraform validate
+          & $tf validate
 
           Write-Host "===> Generating execution plan..."
-          terraform plan -out=tfplan
+          & $tf plan -out=tfplan
 
-    # Publish the binary plan so Stage 2 applies the exact calculated delta
     - task: PublishPipelineArtifact@1
       displayName: 'Publish Execution Plan Artifact'
       inputs:
@@ -81,13 +80,14 @@ stages:
         scriptType: 'ps'
         scriptLocation: 'inlineScript'
         inlineScript: |
-          $ErrorActionPreference = 'Stop'
+          $ErrorActionPreference = 'Stop'$tf = "C:\Tools\Terraform\terraform.exe"
+
           Write-Host "===> Re-initializing backend..."
-          terraform init `
+          & $tf init `
             -backend-config="resource_group_name=$(backendResourceGroup)" `
             -backend-config="storage_account_name=$(backendStorageAccount)" `
             -backend-config="container_name=$(backendContainer)" `
             -backend-config="key=$(backendKey)"
 
           Write-Host "===> Executing terraform apply against tfplan..."
-          terraform apply -input=false -auto-approve tfplan
+          & $tf apply -input=false -auto-approve tfplan
