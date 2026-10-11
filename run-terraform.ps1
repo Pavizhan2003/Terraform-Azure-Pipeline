@@ -1,31 +1,34 @@
-param (
-    [Parameter(Mandatory=$true)][string]$Action, # "plan" or "apply"
+﻿param (
+    [Parameter(Mandatory=$true)][string]$Action,
     [Parameter(Mandatory=$true)][string]$BackendResourceGroup,
     [Parameter(Mandatory=$true)][string]$BackendStorageAccount,
     [Parameter(Mandatory=$true)][string]$BackendContainer,
     [Parameter(Mandatory=$true)][string]$BackendKey
-)
+);
 
-$ErrorActionPreference = 'Stop'$tf = "C:\Tools\Terraform\terraform.exe"
+$ErrorActionPreference = 'Stop';$tf = "C:\Tools\Terraform\terraform.exe";
 
-# Export Service Principal authentication variables for Terraform AzureRM provider
-$env:ARM_CLIENT_ID       = $env:servicePrincipalId$env:ARM_CLIENT_SECRET   = $env:servicePrincipalKey$env:ARM_TENANT_ID       = $env:tenantId$env:ARM_SUBSCRIPTION_ID = (az account show --query id -o tsv)
+# Set ARM authentication for Terraform from Azure CLI environment
+$env:ARM_CLIENT_ID       =$env:servicePrincipalId;
+$env:ARM_CLIENT_SECRET   =$env:servicePrincipalKey;
+$env:ARM_TENANT_ID       =$env:tenantId;
+$env:ARM_SUBSCRIPTION_ID = (az account show --query id -o tsv);
 
-Write-Host "===> Initializing Terraform with remote Azure backend..."
+Write-Host "===> Initializing Terraform with remote Azure backend...";
 & $tf init `
   -backend-config="resource_group_name=$BackendResourceGroup" `
   -backend-config="storage_account_name=$BackendStorageAccount" `
   -backend-config="container_name=$BackendContainer" `
-  -backend-config="key=$BackendKey"
+  -backend-config="key=$BackendKey";
 
 if ($Action -eq "plan") {
-    Write-Host "===> Validating syntax..."
-    & $tf validate
+    Write-Host "===> Validating syntax...";
+    & $tf validate;
 
-    Write-Host "===> Generating execution plan..."
-    & $tf plan -out=tfplan
+    Write-Host "===> Generating execution plan...";
+    & $tf plan -out=tfplan;
 }
 elseif ($Action -eq "apply") {
-    Write-Host "===> Executing terraform apply against plan artifact..."
-    & $tf apply -input=false -auto-approve tfplan
+    Write-Host "===> Executing terraform apply against plan artifact...";
+    & $tf apply -input=false -auto-approve tfplan;
 }
