@@ -1,0 +1,6 @@
+variables:
+  backendStorageAccount: 'tfstatepz5655'
+  backendResourceGroup: 'rg-terraform-state'
+  backendContainer: 'tfstate'
+  backendKey: 'dev.terraform.tfstate'
+  serviceConnection: 'azure-connection'
