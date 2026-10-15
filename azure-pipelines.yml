@@ -32,31 +32,32 @@ stages:
         scriptType: 'ps'
         scriptLocation: 'inlineScript'
         inlineScript: |
-          $ErrorActionPreference = 'Stop'$tf = "C:\Tools\Terraform\terraform.exe"
+          $ErrorActionPreference = 'Stop';$tf = "C:\Tools\Terraform\terraform.exe";
 
-          Write-Host "===> Retrieving Storage Account Key for backend..."
-          $ACCOUNT_KEY = (az storage account keys list --resource-group $(backendResourceGroup) --account-name$(backendStorageAccount) --query "[0].value" -o tsv)
+          Write-Host "===> Retrieving Storage Account Key for backend...";
+          $ACCOUNT_KEY = (az storage account keys list --resource-group $(backendResourceGroup) --account-name$(backendStorageAccount) --query "[0].value" -o tsv);
 
           # Configure ARM authentication for Terraform plan/apply
-          $env:ARM_USE_OIDC        = "true"
-          $env:ARM_OIDC_TOKEN      = $env:idToken$env:ARM_CLIENT_ID       = (az account show --query "user.name" -o tsv)
-          $env:ARM_TENANT_ID       = (az account show --query "tenantId" -o tsv)
-          $env:ARM_SUBSCRIPTION_ID = (az account show --query "id" -o tsv)
+          $env:ARM_USE_OIDC        = "true";
+          $env:ARM_OIDC_TOKEN      =$env:idToken;
+          $env:ARM_CLIENT_ID       = (az account show --query "user.name" -o tsv);
+          $env:ARM_TENANT_ID       = (az account show --query "tenantId" -o tsv);
+          $env:ARM_SUBSCRIPTION_ID = (az account show --query "id" -o tsv);
 
-          Write-Host "===> Initializing Terraform Backend..."
+          Write-Host "===> Initializing Terraform Backend...";
           & $tf init `
             -backend-config="resource_group_name=$(backendResourceGroup)" `
             -backend-config="storage_account_name=$(backendStorageAccount)" `
             -backend-config="container_name=$(backendContainer)" `
             -backend-config="key=$(backendKey)" `
             -backend-config="access_key=$ACCOUNT_KEY" `
-            -reconfigure
+            -reconfigure;
 
-          Write-Host "===> Validating Terraform..."
-          & $tf validate
+          Write-Host "===> Validating Terraform...";
+          & $tf validate;
 
-          Write-Host "===> Generating Plan..."
-          & $tf plan -out=tfplan
+          Write-Host "===> Generating Plan...";
+          & $tf plan -out=tfplan;
 
     - task: PublishPipelineArtifact@1
       displayName: 'Publish Execution Plan Artifact'
@@ -91,24 +92,25 @@ stages:
         scriptType: 'ps'
         scriptLocation: 'inlineScript'
         inlineScript: |
-          $ErrorActionPreference = 'Stop'$tf = "C:\Tools\Terraform\terraform.exe"
+          $ErrorActionPreference = 'Stop';$tf = "C:\Tools\Terraform\terraform.exe";
 
-          Write-Host "===> Retrieving Storage Account Key for backend..."
-          $ACCOUNT_KEY = (az storage account keys list --resource-group $(backendResourceGroup) --account-name$(backendStorageAccount) --query "[0].value" -o tsv)
+          Write-Host "===> Retrieving Storage Account Key for backend...";
+          $ACCOUNT_KEY = (az storage account keys list --resource-group $(backendResourceGroup) --account-name$(backendStorageAccount) --query "[0].value" -o tsv);
 
-          $env:ARM_USE_OIDC        = "true"
-          $env:ARM_OIDC_TOKEN      = $env:idToken$env:ARM_CLIENT_ID       = (az account show --query "user.name" -o tsv)
-          $env:ARM_TENANT_ID       = (az account show --query "tenantId" -o tsv)
-          $env:ARM_SUBSCRIPTION_ID = (az account show --query "id" -o tsv)
+          $env:ARM_USE_OIDC        = "true";
+          $env:ARM_OIDC_TOKEN      =$env:idToken;
+          $env:ARM_CLIENT_ID       = (az account show --query "user.name" -o tsv);
+          $env:ARM_TENANT_ID       = (az account show --query "tenantId" -o tsv);
+          $env:ARM_SUBSCRIPTION_ID = (az account show --query "id" -o tsv);
 
-          Write-Host "===> Re-initializing backend..."
+          Write-Host "===> Re-initializing backend...";
           & $tf init `
             -backend-config="resource_group_name=$(backendResourceGroup)" `
             -backend-config="storage_account_name=$(backendStorageAccount)" `
             -backend-config="container_name=$(backendContainer)" `
             -backend-config="key=$(backendKey)" `
             -backend-config="access_key=$ACCOUNT_KEY" `
-            -reconfigure
+            -reconfigure;
 
-          Write-Host "===> Applying Infrastructure Plan..."
-          & $tf apply -input=false -auto-approve tfplan
+          Write-Host "===> Applying Infrastructure Plan...";
+          & $tf apply -input=false -auto-approve tfplan;
